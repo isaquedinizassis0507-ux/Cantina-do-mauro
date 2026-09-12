@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cantina do Mauro - Pedido</title>
+  <style>
+    :root { --primary: #8b1e1e; --accent: #f4b942; --bg: #fff8ef; --text: #29231f; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, sans-serif; background: var(--bg); color: var(--text); }
+    header { background: var(--primary); color: white; padding: 24px 16px; text-align: center; }
+    header h1 { margin: 0 0 6px; font-size: 2rem; }
+    header p { margin: 0; opacity: .9; }
+    main { max-width: 1000px; margin: 24px auto; padding: 0 16px 40px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+    .produto { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px #00000012; border: 1px solid #eadfd2; }
+    .produto h2 { font-size: 1.05rem; margin: 0 0 8px; }
+    .preco { color: var(--primary); font-weight: bold; margin-bottom: 12px; }
+    .controle { display: flex; align-items: center; gap: 8px; }
+    button { border: 0; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .menos, .mais { width: 38px; height: 36px; font-size: 1.2rem; background: var(--accent); color: #382400; }
+    .quantidade { min-width: 30px; text-align: center; font-weight: bold; }
+    .resumo { margin-top: 24px; background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px #00000012; border: 1px solid #eadfd2; }
+    .resumo h2 { margin-top: 0; }
+    #listaPedido { margin: 0; padding-left: 20px; }
+    .total { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; padding-top: 15px; border-top: 2px solid #eadfd2; font-size: 1.35rem; font-weight: bold; }
+    .acoes { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .acao { padding: 12px 16px; background: var(--primary); color: white; }
+    .limpar { background: #555; }
+    .vazio { color: #777; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Cantina do Mauro</h1>
+    <p>Monte seu pedido e confira o valor final</p>
+  </header>
+
+  <main>
+    <section class="grid" id="produtos"></section>
+
+    <section class="resumo">
+      <h2>Resumo do pedido</h2>
+      <ul id="listaPedido"><li class="vazio">Nenhum produto adicionado.</li></ul>
+      <div class="total"><span>Total:</span><span id="total">R$ 0,00</span></div>
+      <div class="acoes">
+        <button class="acao limpar" onclick="limparPedido()">Limpar pedido</button>
+        <button class="acao" onclick="imprimirPedido()">Imprimir pedido</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const produtos = [
+      { nome: 'Pastel', preco: 5 },
+      { nome: 'Fritas', preco: 20 },
+      { nome: 'Suco lata', preco: 7 },
+      { nome: 'Suco 1L', preco: 10 },
+      { nome: 'Lata 350ml', preco: 7 },
+      { nome: 'Lata mini', preco: 5 },
+      { nome: 'Caldo de cana 300ml', preco: 8 },
+      { nome: 'Caldo de cana 500ml', preco: 10 },
+      { nome: 'Caldo de cana 500ml', preco: 12 },
+      { nome: 'Tropeiro marmitex', preco: 20 },
+      { nome: 'Tropeiro cumbuca', preco: 12 }
+    ];
+
+    const pedido = produtos.map(() => 0);
+    const dinheiro = valor => valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    function renderProdutos() {
+      document.getElementById('produtos').innerHTML = produtos.map((produto, i) => `
+        <article class="produto">
+          <h2>${produto.nome}${produto.nome === 'Caldo de cana 500ml' ? ` (${produto.preco === 10 ? 'opção 1' : 'opção 2'})` : ''}</h2>
+          <div class="preco">${dinheiro(produto.preco)}</div>
+          <div class="controle">
+            <button class="menos" onclick="alterar(${i}, -1)" aria-label="Diminuir quantidade">−</button>
+            <span class="quantidade" id="qtd-${i}">0</span>
+            <button class="mais" onclick="alterar(${i}, 1)" aria-label="Aumentar quantidade">+</button>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    function alterar(indice, valor) {
+      pedido[indice] = Math.max(0, pedido[indice] + valor);
+      document.getElementById(`qtd-${indice}`).textContent = pedido[indice];
+      atualizarResumo();
+    }
+
+    function atualizarResumo() {
+      const itens = produtos.map((produto, i) => ({ ...produto, quantidade: pedido[i] })).filter(item => item.quantidade > 0);
+      const lista = document.getElementById('listaPedido');
+      lista.innerHTML = itens.length ? itens.map(item => `<li>${item.quantidade}x ${item.nome} — ${dinheiro(item.quantidade * item.preco)}</li>`).join('') : '<li class="vazio">Nenhum produto adicionado.</li>';
+      const total = itens.reduce((soma, item) => soma + item.quantidade * item.preco, 0);
+      document.getElementById('total').textContent = dinheiro(total);
+    }
+
+    function limparPedido() {
+      pedido.fill(0);
+      produtos.forEach((_, i) => document.getElementById(`qtd-${i}`).textContent = '0');
+      atualizarResumo();
+    }
+
+    function imprimirPedido() {
+      window.print();
+    }
+
+    renderProdutos();
+  </script>
+</body>
+</html>
